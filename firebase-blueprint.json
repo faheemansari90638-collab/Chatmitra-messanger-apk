@@ -1,0 +1,321 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information in ChatMitra",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique Google Auth UID of the user"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User display name"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User mobile phone number with country code"
+        },
+        "chatMitraId": {
+          "type": "string",
+          "description": "Unique handle identifier in ChatMitra"
+        },
+        "about": {
+          "type": "string",
+          "description": "Status text or about bio"
+        },
+        "avatarUrl": {
+          "type": "string",
+          "description": "URL of user avatar"
+        },
+        "isOnline": {
+          "type": "boolean",
+          "description": "User presence status"
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last active timestamp, written with FieldValue.serverTimestamp()"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp, written with FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp, written with FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["userId", "displayName", "phoneNumber", "chatMitraId", "createdAt", "updatedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "Direct or group chat conversation room",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique conversation ID"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["direct", "group"],
+          "description": "Conversation type"
+        },
+        "participantUids": {
+          "type": "array",
+          "description": "Array of participant UIDs"
+        },
+        "groupTitle": {
+          "type": "string",
+          "description": "Title of the group chat"
+        },
+        "groupDescription": {
+          "type": "string",
+          "description": "Description of the group chat"
+        },
+        "groupAdminUid": {
+          "type": "string",
+          "description": "Admin UID of the group chat"
+        },
+        "lastMessageText": {
+          "type": "string",
+          "description": "Snippet of last message sent"
+        },
+        "lastMessageSenderId": {
+          "type": "string",
+          "description": "Sender UID of the last message"
+        },
+        "lastMessageTimestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last message"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp, written with FieldValue.serverTimestamp()"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp, written with FieldValue.serverTimestamp()"
+        }
+      },
+      "required": ["id", "type", "participantUids", "createdAt", "updatedAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Message item sent within a conversation",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique message ID"
+        },
+        "conversationId": {
+          "type": "string",
+          "description": "Conversation ID this message belongs to"
+        },
+        "senderId": {
+          "type": "string",
+          "description": "UID of the message sender"
+        },
+        "senderName": {
+          "type": "string",
+          "description": "Display name of the sender"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message text or caption"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "image", "video", "document", "audio", "voice"],
+          "description": "Type of message"
+        },
+        "mediaUrl": {
+          "type": "string",
+          "description": "URL of attached media"
+        },
+        "mediaName": {
+          "type": "string",
+          "description": "Original file name of attached media"
+        },
+        "mediaSize": {
+          "type": "string",
+          "description": "Human readable size of media"
+        },
+        "replyToMessageId": {
+          "type": "string",
+          "description": "ID of message being replied to"
+        },
+        "replyToText": {
+          "type": "string",
+          "description": "Snippet of message being replied to"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["sent", "delivered", "read"],
+          "description": "Message delivery and read receipt status"
+        },
+        "isPinned": {
+          "type": "boolean",
+          "description": "Whether message is pinned"
+        },
+        "isStarred": {
+          "type": "boolean",
+          "description": "Whether message is starred"
+        },
+        "isEdited": {
+          "type": "boolean",
+          "description": "Whether message was edited"
+        },
+        "isDeleted": {
+          "type": "boolean",
+          "description": "Whether message was deleted for everyone"
+        },
+        "participantUids": {
+          "type": "array",
+          "description": "Denormalized participant UIDs for low-latency subcollection authorization"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when message was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when message was updated"
+        }
+      },
+      "required": ["id", "conversationId", "senderId", "senderName", "content", "type", "status", "participantUids", "createdAt", "updatedAt"]
+    },
+    "CallRecord": {
+      "title": "CallRecord",
+      "description": "Audio or video WebRTC call signaling session",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique call ID"
+        },
+        "callerId": {
+          "type": "string",
+          "description": "UID of the caller"
+        },
+        "callerName": {
+          "type": "string",
+          "description": "Display name of the caller"
+        },
+        "receiverId": {
+          "type": "string",
+          "description": "UID of the receiver"
+        },
+        "receiverName": {
+          "type": "string",
+          "description": "Display name of the receiver"
+        },
+        "callType": {
+          "type": "string",
+          "enum": ["audio", "video"],
+          "description": "Audio or video call"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ringing", "accepted", "rejected", "ended", "missed"],
+          "description": "Call status"
+        },
+        "participantUids": {
+          "type": "array",
+          "description": "Participant UIDs in call"
+        },
+        "durationSeconds": {
+          "type": "integer",
+          "description": "Duration of call in seconds"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when call initiated"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when call state updated"
+        }
+      },
+      "required": ["id", "callerId", "callerName", "receiverId", "receiverName", "callType", "status", "participantUids", "createdAt", "updatedAt"]
+    },
+    "AiMessage": {
+      "title": "AiMessage",
+      "description": "Conversation message with Hamza AI assistant",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique AI message ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User UID"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["user", "model"],
+          "description": "Role of the message author"
+        },
+        "content": {
+          "type": "string",
+          "description": "Message text"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when message was stored"
+        }
+      },
+      "required": ["id", "userId", "role", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "UserProfile"
+      },
+      "description": "User profile directory"
+    },
+    "/conversations/{conversationId}": {
+      "schema": {
+        "$ref": "Conversation"
+      },
+      "description": "Chat conversations"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": {
+        "$ref": "Message"
+      },
+      "description": "Messages inside a conversation"
+    },
+    "/calls/{callId}": {
+      "schema": {
+        "$ref": "CallRecord"
+      },
+      "description": "Call signaling and history"
+    },
+    "/users/{userId}/ai_messages/{aiMessageId}": {
+      "schema": {
+        "$ref": "AiMessage"
+      },
+      "description": "Hamza AI assistant private user chat history"
+    }
+  }
+}

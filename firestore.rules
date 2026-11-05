@@ -1,0 +1,264 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 50 &&
+             data.phoneNumber is string && data.phoneNumber.size() >= 6 && data.phoneNumber.size() <= 20 &&
+             data.chatMitraId is string && data.chatMitraId.size() >= 3 && data.chatMitraId.size() <= 30 &&
+             (!('about' in data) || (data.about is string && data.about.size() <= 200)) &&
+             (!('avatarUrl' in data) || data.avatarUrl == null || (data.avatarUrl is string && data.avatarUrl.size() <= 500)) &&
+             (!('isOnline' in data) || data.isOnline is bool) &&
+             (!('lastSeen' in data) || data.lastSeen is timestamp) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidConversation(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.type in ['direct', 'group'] &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 50 &&
+             (data.participantUids.size() == 0 || data.participantUids[0] is string) &&
+             (!('groupTitle' in data) || data.groupTitle == null || (data.groupTitle is string && data.groupTitle.size() <= 60)) &&
+             (!('groupDescription' in data) || data.groupDescription == null || (data.groupDescription is string && data.groupDescription.size() <= 200)) &&
+             (!('groupAdminUid' in data) || data.groupAdminUid == null || (data.groupAdminUid is string && data.groupAdminUid.size() <= 128)) &&
+             (!('lastMessageText' in data) || data.lastMessageText == null || (data.lastMessageText is string && data.lastMessageText.size() <= 500)) &&
+             (!('lastMessageSenderId' in data) || data.lastMessageSenderId == null || (data.lastMessageSenderId is string && data.lastMessageSenderId.size() <= 128)) &&
+             (!('lastMessageTimestamp' in data) || data.lastMessageTimestamp == null || data.lastMessageTimestamp is timestamp) &&
+             (!('disappearingDurationSeconds' in data) || data.disappearingDurationSeconds == null || data.disappearingDurationSeconds is int) &&
+             (!('chatFolder' in data) || data.chatFolder == null || (data.chatFolder is string && data.chatFolder.size() <= 50)) &&
+             (!('isLocked' in data) || data.isLocked is bool) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMessage(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.conversationId is string && isValidId(data.conversationId) &&
+             data.senderId is string && isValidId(data.senderId) &&
+             data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 50 &&
+             data.content is string && data.content.size() <= 5000 &&
+             data.type in ['text', 'image', 'video', 'document', 'audio', 'voice', 'poll', 'location', 'event'] &&
+             data.status in ['sent', 'delivered', 'read', 'scheduled'] &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 50 &&
+             (data.participantUids.size() == 0 || data.participantUids[0] is string) &&
+             (!('mediaUrl' in data) || data.mediaUrl == null || (data.mediaUrl is string && data.mediaUrl.size() <= 1000)) &&
+             (!('mediaName' in data) || data.mediaName == null || (data.mediaName is string && data.mediaName.size() <= 200)) &&
+             (!('mediaSize' in data) || data.mediaSize == null || (data.mediaSize is string && data.mediaSize.size() <= 50)) &&
+             (!('replyToMessageId' in data) || data.replyToMessageId == null || (data.replyToMessageId is string && data.replyToMessageId.size() <= 128)) &&
+             (!('replyToText' in data) || data.replyToText == null || (data.replyToText is string && data.replyToText.size() <= 500)) &&
+             (!('isPinned' in data) || data.isPinned is bool) &&
+             (!('isStarred' in data) || data.isStarred is bool) &&
+             (!('isEdited' in data) || data.isEdited is bool) &&
+             (!('isDeleted' in data) || data.isDeleted is bool) &&
+             (!('pollData' in data) || data.pollData == null || (data.pollData is string && data.pollData.size() <= 4000)) &&
+             (!('locationData' in data) || data.locationData == null || (data.locationData is string && data.locationData.size() <= 1000)) &&
+             (!('eventData' in data) || data.eventData == null || (data.eventData is string && data.eventData.size() <= 2000)) &&
+             (!('scheduledTime' in data) || data.scheduledTime == null || data.scheduledTime is timestamp) &&
+             (!('isScheduled' in data) || data.isScheduled is bool) &&
+             (!('disappearingDurationSeconds' in data) || data.disappearingDurationSeconds == null || data.disappearingDurationSeconds is int) &&
+             (!('expiresAt' in data) || data.expiresAt == null || data.expiresAt is timestamp) &&
+             (!('translatedText' in data) || data.translatedText == null || (data.translatedText is string && data.translatedText.size() <= 5000)) &&
+             (!('transcribedText' in data) || data.transcribedText == null || (data.transcribedText is string && data.transcribedText.size() <= 5000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCall(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.callerId is string && data.callerId.size() <= 128 &&
+             data.callerName is string && data.callerName.size() >= 1 && data.callerName.size() <= 50 &&
+             data.receiverId is string && data.receiverId.size() <= 128 &&
+             data.receiverName is string && data.receiverName.size() >= 1 && data.receiverName.size() <= 50 &&
+             data.callType in ['audio', 'video'] &&
+             data.status in ['ringing', 'accepted', 'rejected', 'ended', 'missed'] &&
+             data.participantUids is list && data.participantUids.size() >= 1 && data.participantUids.size() <= 10 &&
+             (data.participantUids.size() == 0 || data.participantUids[0] is string) &&
+             (!('durationSeconds' in data) || data.durationSeconds == null || data.durationSeconds is int) &&
+             (!('isScreenSharing' in data) || data.isScreenSharing is bool) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAiMessage(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.role in ['user', 'model'] &&
+             data.content is string && data.content.size() <= 10000 &&
+             (!('language' in data) || data.language == null || (data.language is string && data.language.size() <= 10)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidStatus(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 50 &&
+             (!('userAvatarUrl' in data) || data.userAvatarUrl == null || (data.userAvatarUrl is string && data.userAvatarUrl.size() <= 500)) &&
+             (!('text' in data) || (data.text is string && data.text.size() <= 1000)) &&
+             (!('mediaUrl' in data) || data.mediaUrl == null || (data.mediaUrl is string && data.mediaUrl.size() <= 1000)) &&
+             (!('type' in data) || data.type in ['text', 'photo', 'video']) &&
+             (!('privacy' in data) || data.privacy in ['everyone', 'contacts', 'private']) &&
+             (!('viewers' in data) || data.viewers is list) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidSavedItem(data) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() <= 200 &&
+             data.content is string && data.content.size() <= 10000 &&
+             data.type in ['note', 'image', 'document', 'link', 'voice'] &&
+             (!('url' in data) || data.url == null || (data.url is string && data.url.size() <= 1000)) &&
+             (!('tags' in data) || data.tags is list) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn();
+
+      allow create: if isSignedIn() && isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() && isValidId(userId) &&
+                       request.auth.uid == userId &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming());
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+      // Hamza AI private conversation subcollection
+      match /ai_messages/{aiMessageId} {
+        allow get, delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidId(aiMessageId);
+        allow list: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+
+        allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId &&
+                         isValidId(aiMessageId) &&
+                         isValidAiMessage(incoming());
+
+        allow update: if false; // AI messages are immutable history
+      }
+
+      // Personal Space saved items subcollection
+      match /saved_items/{itemId} {
+        allow get, list, delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidId(itemId);
+        allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidId(itemId) &&
+                         isValidSavedItem(incoming());
+        allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidId(itemId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidSavedItem(incoming());
+      }
+    }
+
+    // 2. Conversations collection
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && isValidId(conversationId) &&
+                    request.auth.uid in resource.data.participantUids;
+      allow list: if isSignedIn() &&
+                     request.auth.uid in resource.data.participantUids;
+
+      allow create: if isSignedIn() && isValidId(conversationId) &&
+                       request.auth.uid in incoming().participantUids &&
+                       isValidConversation(incoming());
+
+      allow update: if isSignedIn() && isValidId(conversationId) &&
+                       request.auth.uid in existing().participantUids &&
+                       request.auth.uid in incoming().participantUids &&
+                       incoming().id == existing().id &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidConversation(incoming());
+
+      allow delete: if isSignedIn() && isValidId(conversationId) &&
+                       request.auth.uid in resource.data.participantUids;
+
+      // Messages subcollection
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) &&
+                      request.auth.uid in resource.data.participantUids;
+        allow list: if isSignedIn() && isValidId(conversationId) &&
+                       request.auth.uid in resource.data.participantUids;
+
+        allow create: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) &&
+                         incoming().senderId == request.auth.uid &&
+                         request.auth.uid in incoming().participantUids &&
+                         incoming().conversationId == conversationId &&
+                         isValidMessage(incoming());
+
+        allow update: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) &&
+                         request.auth.uid in existing().participantUids &&
+                         request.auth.uid in incoming().participantUids &&
+                         incoming().id == existing().id &&
+                         incoming().conversationId == existing().conversationId &&
+                         incoming().senderId == existing().senderId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidMessage(incoming());
+
+        allow delete: if isSignedIn() && isValidId(conversationId) && isValidId(messageId) &&
+                         (resource.data.senderId == request.auth.uid || request.auth.uid in resource.data.participantUids);
+      }
+    }
+
+    // 3. Status updates collection
+    match /statuses/{statusId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(statusId) &&
+                       incoming().userId == request.auth.uid &&
+                       isValidStatus(incoming());
+      allow update: if isSignedIn() && isValidId(statusId) &&
+                       (existing().userId == request.auth.uid ||
+                        (incoming().userId == existing().userId && incoming().createdAt == existing().createdAt));
+      allow delete: if isSignedIn() && isValidId(statusId) && existing().userId == request.auth.uid;
+    }
+
+    // 4. Calls collection
+    match /calls/{callId} {
+      allow get: if isSignedIn() && isValidId(callId) &&
+                    request.auth.uid in resource.data.participantUids;
+      allow list: if isSignedIn() &&
+                     request.auth.uid in resource.data.participantUids;
+
+      allow create: if isSignedIn() && isValidId(callId) &&
+                       incoming().callerId == request.auth.uid &&
+                       request.auth.uid in incoming().participantUids &&
+                       isValidCall(incoming());
+
+      allow update: if isSignedIn() && isValidId(callId) &&
+                       request.auth.uid in existing().participantUids &&
+                       request.auth.uid in incoming().participantUids &&
+                       incoming().id == existing().id &&
+                       incoming().callerId == existing().callerId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidCall(incoming());
+
+      allow delete: if isSignedIn() && isValidId(callId) &&
+                       request.auth.uid in resource.data.participantUids;
+    }
+  }
+}
