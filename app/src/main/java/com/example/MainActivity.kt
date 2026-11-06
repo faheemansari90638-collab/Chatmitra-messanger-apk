@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.data.model.AppSettings
+import com.example.data.model.HamzaAiConfig
 import com.example.data.repository.AiRepository
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.CallRepository
@@ -33,6 +34,7 @@ import com.example.data.repository.PersonalSpaceRepository
 import com.example.data.repository.SettingsRepository
 import com.example.data.repository.StatusRepository
 import com.example.ui.screens.MainScreen
+import com.example.ui.screens.ai.HamzaAiProfileScreen
 import com.example.ui.screens.ai.HamzaAiScreen
 import com.example.ui.screens.auth.AuthScreen
 import com.example.ui.screens.auth.ProfileSetupScreen
@@ -125,6 +127,7 @@ sealed class CurrentDestination {
     data object BackupSettings : CurrentDestination()
     data object LinkedDevices : CurrentDestination()
     data object HelpSupport : CurrentDestination()
+    data object HamzaAiProfile : CurrentDestination()
 }
 
 @Composable
@@ -141,6 +144,11 @@ fun ChatMitraApp(
 ) {
     val currentUser by authRepository.currentUser.collectAsState()
     val userProfile by authRepository.userProfile.collectAsState()
+    val aiConfig by settingsRepository.hamzaAiConfigFlow.collectAsState(initial = HamzaAiConfig())
+
+    LaunchedEffect(aiConfig) {
+        aiRepository.activeConfig = aiConfig
+    }
 
     var isAppUnlocked by remember(settings.isAppLockEnabled) {
         mutableStateOf(!settings.isAppLockEnabled)
@@ -221,6 +229,9 @@ fun ChatMitraApp(
                 },
                 onOpenQrCode = {
                     destination = CurrentDestination.QrContact
+                },
+                onOpenAiProfile = {
+                    destination = CurrentDestination.HamzaAiProfile
                 },
                 onNavigatePrivacy = { destination = CurrentDestination.PrivacySettings },
                 onNavigateAppLock = { destination = CurrentDestination.AppLockSettings },
@@ -338,6 +349,14 @@ fun ChatMitraApp(
         is CurrentDestination.HelpSupport -> {
             BackHandler { destination = CurrentDestination.Main }
             HelpSupportScreen(onBackClick = { destination = CurrentDestination.Main })
+        }
+        is CurrentDestination.HamzaAiProfile -> {
+            BackHandler { destination = CurrentDestination.Main }
+            HamzaAiProfileScreen(
+                aiRepository = aiRepository,
+                settingsRepository = settingsRepository,
+                onBackClick = { destination = CurrentDestination.Main }
+            )
         }
     }
 }

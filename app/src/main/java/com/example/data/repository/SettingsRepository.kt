@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.data.model.AppSettings
+import com.example.data.model.HamzaAiConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.io.File
@@ -36,6 +37,27 @@ class SettingsRepository(private val context: Context) {
         val HIDE_SENSITIVE_NOTIF = booleanPreferencesKey("hide_sensitive_notif")
         val BLOCK_UNKNOWN = booleanPreferencesKey("block_unknown")
         val SCREENSHOT_PROTECTION = booleanPreferencesKey("screenshot_protection")
+
+        // Hamza AI Preferences
+        val AI_TONE = stringPreferencesKey("ai_tone")
+        val AI_RESPONSE_LENGTH = stringPreferencesKey("ai_response_length")
+        val AI_EMOJI_LEVEL = stringPreferencesKey("ai_emoji_level")
+        val AI_DEFAULT_LANG = stringPreferencesKey("ai_default_lang")
+        val AI_POLISHING_STYLE = stringPreferencesKey("ai_polishing_style")
+        val AI_CUSTOM_INSTRUCTIONS = stringPreferencesKey("ai_custom_instructions")
+        val AI_GRAMMAR_EXPLANATION = booleanPreferencesKey("ai_grammar_explanation")
+    }
+
+    val hamzaAiConfigFlow: Flow<HamzaAiConfig> = context.dataStore.data.map { prefs ->
+        HamzaAiConfig(
+            tone = prefs[PreferencesKeys.AI_TONE] ?: "Friendly & Warm",
+            responseLength = prefs[PreferencesKeys.AI_RESPONSE_LENGTH] ?: "Balanced",
+            emojiLevel = prefs[PreferencesKeys.AI_EMOJI_LEVEL] ?: "Moderate",
+            defaultLanguage = prefs[PreferencesKeys.AI_DEFAULT_LANG] ?: "English",
+            smartPolishingStyle = prefs[PreferencesKeys.AI_POLISHING_STYLE] ?: "Casual & Friendly",
+            customInstructions = prefs[PreferencesKeys.AI_CUSTOM_INSTRUCTIONS] ?: "",
+            grammarExplanation = prefs[PreferencesKeys.AI_GRAMMAR_EXPLANATION] ?: true
+        )
     }
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -76,6 +98,22 @@ class SettingsRepository(private val context: Context) {
             prefs[PreferencesKeys.BLOCK_UNKNOWN] = blockUnknown
             prefs[PreferencesKeys.SCREENSHOT_PROTECTION] = screenshotProtection
         }
+    }
+
+    suspend fun updateHamzaAiConfig(config: HamzaAiConfig) {
+        context.dataStore.edit { prefs ->
+            prefs[PreferencesKeys.AI_TONE] = config.tone
+            prefs[PreferencesKeys.AI_RESPONSE_LENGTH] = config.responseLength
+            prefs[PreferencesKeys.AI_EMOJI_LEVEL] = config.emojiLevel
+            prefs[PreferencesKeys.AI_DEFAULT_LANG] = config.defaultLanguage
+            prefs[PreferencesKeys.AI_POLISHING_STYLE] = config.smartPolishingStyle
+            prefs[PreferencesKeys.AI_CUSTOM_INSTRUCTIONS] = config.customInstructions
+            prefs[PreferencesKeys.AI_GRAMMAR_EXPLANATION] = config.grammarExplanation
+        }
+    }
+
+    suspend fun resetHamzaAiConfig() {
+        updateHamzaAiConfig(HamzaAiConfig())
     }
 
     suspend fun setTheme(useSystem: Boolean, isDark: Boolean) {

@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -67,7 +68,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.AiMessage
+import com.example.data.model.HamzaAiConfig
 import com.example.data.repository.AiRepository
+import com.example.data.repository.SettingsRepository
 import com.example.ui.components.Modern3DCard
 import com.example.ui.theme.EmeraldDark
 import com.example.ui.theme.EmeraldPrimary
@@ -76,12 +79,17 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun HamzaAiScreen(
-    aiRepository: AiRepository
+    aiRepository: AiRepository,
+    settingsRepository: SettingsRepository? = null,
+    onOpenAiProfile: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val messages by aiRepository.observeAiMessages().collectAsState(initial = emptyList())
     val listState = rememberLazyListState()
+
+    val savedConfig by (settingsRepository?.hamzaAiConfigFlow?.collectAsState(initial = HamzaAiConfig())
+        ?: remember { mutableStateOf(HamzaAiConfig()) })
 
     var inputPrompt by remember { mutableStateOf("") }
     var selectedLanguage by remember { mutableStateOf("English") }
@@ -111,7 +119,7 @@ fun HamzaAiScreen(
             .navigationBarsPadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Hamza AI 3D Header
+        // Hamza AI 3D Header with Profile Tap
         Surface(
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 3.dp,
@@ -120,11 +128,19 @@ fun HamzaAiScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onOpenAiProfile() }
+                        .padding(4.dp)
+                        .testTag("ai_header_profile_tap")
+                ) {
                     val aiGradient = Brush.linearGradient(
                         colors = listOf(PurpleAccent, EmeraldPrimary)
                     )
@@ -144,38 +160,66 @@ fun HamzaAiScreen(
                         )
                     }
 
-                    Spacer(Modifier.width(12.dp))
+                    Spacer(Modifier.width(10.dp))
 
                     Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Hamza AI",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                color = PurpleAccent.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(10.dp)
+                            ) {
+                                Text(
+                                    text = savedConfig.tone.take(12),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PurpleAccent,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                         Text(
-                            text = "Hamza AI",
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Multilingual Assistant (EN • HI • UR)",
+                            text = "Tap to configure tone & personality • Gemini 3.8",
                             fontSize = 11.sp,
-                            color = PurpleAccent,
-                            fontWeight = FontWeight.Medium
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Normal
                         )
                     }
                 }
 
-                IconButton(
-                    onClick = {
-                        scope.launch {
-                            aiRepository.clearAiHistory()
-                            Toast.makeText(context, "AI chat cleared", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier.testTag("clear_ai_chat_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.DeleteSweep,
-                        contentDescription = "Clear Chat",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = onOpenAiProfile,
+                        modifier = Modifier.testTag("open_ai_profile_icon_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = "AI Profile & Tone",
+                            tint = PurpleAccent
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                aiRepository.clearAiHistory()
+                                Toast.makeText(context, "AI chat cleared", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.testTag("clear_ai_chat_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DeleteSweep,
+                            contentDescription = "Clear Chat",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }
@@ -360,6 +404,7 @@ fun HamzaAiScreen(
                                     aiRepository.sendPrompt(
                                         prompt = promptToSend,
                                         language = langCode,
+                                        config = savedConfig,
                                         onChunkReceived = { chunk ->
                                             streamingReply = chunk
                                         }

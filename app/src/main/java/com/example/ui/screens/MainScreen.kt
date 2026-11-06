@@ -64,6 +64,7 @@ fun MainScreen(
     onNavigateHelp: () -> Unit,
     onOpenPersonalSpace: () -> Unit = {},
     onOpenQrCode: () -> Unit = {},
+    onOpenAiProfile: () -> Unit = {},
     onEditProfile: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
@@ -151,7 +152,11 @@ fun MainScreen(
                         )
                     }
                     MainTab.HAMZA_AI -> {
-                        HamzaAiScreen(aiRepository = aiRepository)
+                        HamzaAiScreen(
+                            aiRepository = aiRepository,
+                            settingsRepository = settingsRepository,
+                            onOpenAiProfile = onOpenAiProfile
+                        )
                     }
                     MainTab.SETTINGS -> {
                         SettingsScreen(
@@ -165,6 +170,7 @@ fun MainScreen(
                             onNavigateBackup = onNavigateBackup,
                             onNavigateLinkedDevices = onNavigateLinkedDevices,
                             onNavigateHelp = onNavigateHelp,
+                            onNavigateAiProfile = onOpenAiProfile,
                             onLoggedOut = onLoggedOut
                         )
                     }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.R
 import com.example.data.model.AiMessage
+import com.example.data.model.HamzaAiConfig
 import com.example.util.OperationType
 import com.example.util.handleFirestoreError
 import com.google.firebase.Firebase
@@ -35,30 +36,94 @@ class AiRepository(
 
     private val auth = Firebase.auth
 
-    // Lazy initialization of model as mandated by Firebase AI Logic skill
-    private val model by lazy {
-        Firebase.ai.generativeModel(
-            modelName = "gemini-3.8-flash",
-            generationConfig = generationConfig {
-                temperature = 0.7f
-                topK = 40
-            },
-            systemInstruction = content {
-                text(
-                    """
-                    You are Hamza AI, the intelligent and friendly AI companion integrated into ChatMitra messaging app.
-                    You are fluent in English, Hindi (हिन्दी), and Urdu (اردو).
-                    Capabilities:
-                    1. Help users draft, polish, and reply to chat messages with appropriate tone.
-                    2. Correct English grammar and explain nuances gently.
-                    3. Translate accurately between English, Hindi, and Urdu.
-                    4. Summarize long conversations, notes, or articles.
-                    5. Provide educational help and general knowledge answers clearly and concisely.
-                    Style: Helpful, respectful, warm, and concise suitable for mobile chat.
-                    """.trimIndent()
-                )
-            }
-        )
+    var activeConfig: HamzaAiConfig = HamzaAiConfig()
+
+    private fun buildSystemInstruction(config: HamzaAiConfig): String {
+        val tonePrompt = when (config.tone) {
+            "Professional & Formal" -> "Adopt a professional, executive, polished, courteous, and business-ready tone with crisp phrasing and respectful etiquette."
+            "Concise & Direct" -> "Adopt an ultra-concise, direct, and to-the-point style. Avoid small talk, introductions, or pleasantries. Use bullet points for structured information."
+            "Creative & Witty" -> "Adopt an expressive, creative, witty, and engaging tone with charming wordplay and clever analogies where appropriate."
+            "Empathetic & Gentle" -> "Adopt an empathetic, thoughtful, calming, supportive, and deeply considerate tone. Validate feelings gently."
+            else -> "Adopt a friendly, warm, supportive, approachable, and encouraging tone suitable for a trusted messaging companion."
+        }
+
+        val lengthPrompt = when (config.responseLength) {
+            "Concise" -> "Keep your answer very short and concise (1-3 sentences or tight bullet points)."
+            "Detailed" -> "Provide a comprehensive, detailed, step-by-step answer with thorough explanations."
+            else -> "Keep your answer well-balanced, engaging, and easy to read on a mobile chat screen."
+        }
+
+        val emojiPrompt = when (config.emojiLevel) {
+            "None" -> "Do NOT include any emojis in your response."
+            "Expressive" -> "Use expressive, lively, and colorful emojis generously to make the message feel vibrant."
+            else -> "Use emojis tastefully and naturally (1-2 per message where helpful)."
+        }
+
+        val customPrompt = if (config.customInstructions.isNotBlank()) {
+            "\nUser Persona Rules:\n${config.customInstructions.trim()}"
+        } else ""
+
+        val grammarPrompt = if (config.grammarExplanation) {
+            "When correcting grammar or editing text, provide a brief, helpful explanation of the rule or nuance."
+        } else {
+            "When correcting grammar or editing text, provide only the perfected output directly without lengthy rule explanations."
+        }
+
+        return """
+            You are Hamza AI, the intelligent and personalized messaging companion integrated into ChatMitra messaging app.
+            You are fluent in English, Hindi (हिन्दी), and Urdu (اردو).
+            
+            ACTIVE USER TONE & STYLE PREFERENCES:
+            - Tone: $tonePrompt
+            - Length: $lengthPrompt
+            - Emoji Usage: $emojiPrompt
+            - Grammar Handling: $grammarPrompt
+            $customPrompt
+            
+            CORE CAPABILITIES:
+            1. Help users draft, refine, polish, and reply to messages according to their active tone.
+            2. Correct grammar and translate seamlessly between English, Hindi, and Urdu.
+            3. Summarize long conversations, notes, or articles.
+            4. Provide educational help and general knowledge answers clearly and concisely.
+            
+            Formatting: Clean mobile Markdown, readable paragraphs, and bullet points where helpful.
+        """.trimIndent()
+    }
+
+    private fun getTemperatureForTone(tone: String): Float = when (tone) {
+        "Professional & Formal" -> 0.35f
+        "Concise & Direct" -> 0.25f
+        "Creative & Witty" -> 0.85f
+        "Empathetic & Gentle" -> 0.65f
+        else -> 0.7f // Friendly & Warm
+    }
+
+    fun getGenerativeModel(config: HamzaAiConfig = activeConfig) = Firebase.ai.generativeModel(
+        modelName = "gemini-3.8-flash",
+        generationConfig = generationConfig {
+            temperature = getTemperatureForTone(config.tone)
+            topK = 40
+        },
+        systemInstruction = content {
+            text(buildSystemInstruction(config))
+        }
+    )
+
+    private val defaultModel by lazy {
+        getGenerativeModel(activeConfig)
+    }
+
+    private val model get() = getGenerativeModel(activeConfig)
+
+    suspend fun testToneReply(testPrompt: String, config: HamzaAiConfig = activeConfig): Result<String> {
+        return try {
+            val dynamicModel = getGenerativeModel(config)
+            val response = dynamicModel.generateContent(testPrompt)
+            Result.success(response.text?.trim() ?: "No response generated.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Test tone generation failed", e)
+            Result.failure(e)
+        }
     }
 
     private fun requireUserId(): String {
@@ -98,6 +163,7 @@ class AiRepository(
     suspend fun sendPrompt(
         prompt: String,
         language: String = "en",
+        config: HamzaAiConfig? = null,
         onChunkReceived: (String) -> Unit
     ): Result<String> {
         val uid = requireUserId()
@@ -124,8 +190,9 @@ class AiRepository(
         // 2. Stream generation from Gemini
         val accumulated = StringBuilder()
         return try {
+            val targetModel = getGenerativeModel(config ?: activeConfig)
             withTimeout(60_000L) {
-                model.generateContentStream(prompt).collect { chunk ->
+                targetModel.generateContentStream(prompt).collect { chunk ->
                     val text = chunk.text.orEmpty()
                     accumulated.append(text)
                     onChunkReceived(accumulated.toString())

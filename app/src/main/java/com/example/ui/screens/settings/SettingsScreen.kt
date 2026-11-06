@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.DeleteForever
@@ -81,6 +82,7 @@ fun SettingsScreen(
     onNavigateBackup: () -> Unit,
     onNavigateLinkedDevices: () -> Unit,
     onNavigateHelp: () -> Unit,
+    onNavigateAiProfile: () -> Unit = {},
     onLoggedOut: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -172,6 +174,17 @@ fun SettingsScreen(
             title = "Linked Devices",
             subtitle = "Pair another phone, tablet or browser",
             onClick = onNavigateLinkedDevices
+        )
+
+        Spacer(Modifier.height(14.dp))
+
+        SettingsCategoryTitle("AI ASSISTANT")
+        SettingsRowItem(
+            icon = Icons.Default.AutoAwesome,
+            iconTint = PurpleAccent,
+            title = "Hamza AI Personality & Tone",
+            subtitle = "Custom profile, tone preferences, response length",
+            onClick = onNavigateAiProfile
         )
 
         Spacer(Modifier.height(14.dp))
