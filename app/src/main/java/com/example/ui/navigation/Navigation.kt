@@ -1,12 +1,10 @@
 package com.example.ui.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Contacts
@@ -22,7 +20,6 @@ enum class MainTab(
     CHATS("chats", "Chats", Icons.Filled.ChatBubble, Icons.Outlined.ChatBubbleOutline),
     CALLS("calls", "Calls", Icons.Filled.Call, Icons.Outlined.Call),
     CONTACTS("contacts", "Contacts", Icons.Filled.Contacts, Icons.Outlined.Contacts),
-    HAMZA_AI("hamza_ai", "Hamza AI", Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
     SETTINGS("settings", "Settings", Icons.Filled.Settings, Icons.Outlined.Settings)
 }
 

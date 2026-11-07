@@ -269,7 +269,7 @@ fun ChatListScreen(
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    items(listOf("Aarav", "Priya", "Hamza", "Zaid", "Rohan")) { contactName ->
+                    items(listOf("Aarav", "Priya", "Farhan", "Zaid", "Rohan")) { contactName ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.clickable { onOpenStatus() }

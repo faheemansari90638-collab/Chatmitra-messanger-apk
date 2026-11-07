@@ -102,15 +102,6 @@ service cloud.firestore {
              data.updatedAt is timestamp && data.updatedAt <= request.time;
     }
 
-    function isValidAiMessage(data) {
-      return data.id is string && isValidId(data.id) &&
-             data.userId is string && data.userId == request.auth.uid &&
-             data.role in ['user', 'model'] &&
-             data.content is string && data.content.size() <= 10000 &&
-             (!('language' in data) || data.language == null || (data.language is string && data.language.size() <= 10)) &&
-             data.createdAt is timestamp && data.createdAt <= request.time;
-    }
-
     function isValidStatus(data) {
       return data.id is string && isValidId(data.id) &&
              data.userId is string && data.userId == request.auth.uid &&
@@ -152,18 +143,6 @@ service cloud.firestore {
                        isValidUserProfile(incoming());
 
       allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
-
-      // Hamza AI private conversation subcollection
-      match /ai_messages/{aiMessageId} {
-        allow get, delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidId(aiMessageId);
-        allow list: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
-
-        allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId &&
-                         isValidId(aiMessageId) &&
-                         isValidAiMessage(incoming());
-
-        allow update: if false; // AI messages are immutable history
-      }
 
       // Personal Space saved items subcollection
       match /saved_items/{itemId} {

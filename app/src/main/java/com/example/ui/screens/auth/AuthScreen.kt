@@ -133,7 +133,7 @@ fun AuthScreen(
             )
 
             Text(
-                text = "Next-Gen Secure Messaging with Hamza AI",
+                text = "Next-Gen Secure & Private Messaging",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

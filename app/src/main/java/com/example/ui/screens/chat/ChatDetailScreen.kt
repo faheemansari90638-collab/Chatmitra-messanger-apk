@@ -91,13 +91,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.Message
-import com.example.data.repository.AiRepository
 import com.example.data.repository.CallRepository
 import com.example.data.repository.ChatRepository
 import com.example.ui.components.AvatarView
 import com.example.ui.components.ChatBubble
 import com.example.ui.theme.EmeraldPrimary
 import com.example.ui.theme.PurpleAccent
+import com.example.util.TranscriptionHelper
+import com.example.util.TranslationHelper
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,7 +110,6 @@ fun ChatDetailScreen(
     currentUserName: String,
     chatRepository: ChatRepository,
     callRepository: CallRepository,
-    aiRepository: AiRepository,
     onBackClick: () -> Unit,
     onStartCall: (String, String, String) -> Unit // callId, targetName, type
 ) {
@@ -127,15 +127,6 @@ fun ChatDetailScreen(
     // Dialogs & Feature Sheets
     var editingMessage by remember { mutableStateOf<Message?>(null) }
     var editedContentText by remember { mutableStateOf("") }
-
-    // Hamza AI Dialogs
-    var isAiMenuOpen by remember { mutableStateOf(false) }
-    var aiResultTitle by remember { mutableStateOf("") }
-    var aiResultContent by remember { mutableStateOf("") }
-    var isAiLoading by remember { mutableStateOf(false) }
-    var showAiResultDialog by remember { mutableStateOf(false) }
-    var askQuestionText by remember { mutableStateOf("") }
-    var showAskAiDialog by remember { mutableStateOf(false) }
 
     // Next-Gen Feature Dialogs
     var showPollDialog by remember { mutableStateOf(false) }
@@ -211,66 +202,6 @@ fun ChatDetailScreen(
                     }
                 },
                 actions = {
-                    // Hamza AI Conversation Assistant button
-                    IconButton(
-                        onClick = { isAiMenuOpen = true },
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(PurpleAccent.copy(alpha = 0.15f))
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AutoAwesome,
-                            contentDescription = "Hamza AI Assistant",
-                            tint = PurpleAccent
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = isAiMenuOpen,
-                        onDismissRequest = { isAiMenuOpen = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Summarize Conversation") },
-                            leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PurpleAccent) },
-                            onClick = {
-                                isAiMenuOpen = false
-                                isAiLoading = true
-                                aiResultTitle = "Conversation Summary"
-                                showAiResultDialog = true
-                                scope.launch {
-                                    val formattedList = messages.map { Pair(it.senderName, it.content) }
-                                    val res = aiRepository.summarizeConversation(formattedList)
-                                    isAiLoading = false
-                                    aiResultContent = res.getOrElse { "Failed to generate summary: ${it.message}" }
-                                }
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Extract Action Items & Dates") },
-                            leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null, tint = EmeraldPrimary) },
-                            onClick = {
-                                isAiMenuOpen = false
-                                isAiLoading = true
-                                aiResultTitle = "Action Items & Deadlines"
-                                showAiResultDialog = true
-                                scope.launch {
-                                    val formattedList = messages.map { Pair(it.senderName, it.content) }
-                                    val res = aiRepository.extractTasksAndDates(formattedList)
-                                    isAiLoading = false
-                                    aiResultContent = res.getOrElse { "Failed to extract tasks: ${it.message}" }
-                                }
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Ask AI about this chat") },
-                            leadingIcon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF339AF0)) },
-                            onClick = {
-                                isAiMenuOpen = false
-                                showAskAiDialog = true
-                            }
-                        )
-                    }
-
                     // Audio Call
                     IconButton(
                         onClick = {
@@ -418,18 +349,14 @@ fun ChatDetailScreen(
                         onTranscribeAudio = {
                             scope.launch {
                                 Toast.makeText(context, "Transcribing voice audio...", Toast.LENGTH_SHORT).show()
-                                val transcription = aiRepository.transcribeAudio(msg.mediaName ?: "voice note")
-                                transcription.onSuccess { text ->
-                                    chatRepository.updateMessageTranscription(conversationId, msg.id, text)
-                                }
+                                val transcription = TranscriptionHelper.transcribe(msg.mediaName ?: "voice note")
+                                chatRepository.updateMessageTranscription(conversationId, msg.id, transcription)
                             }
                         },
                         onTranslateMessage = {
                             scope.launch {
-                                val res = aiRepository.translateMessage(msg.content, "Hindi")
-                                res.onSuccess { tr ->
-                                    chatRepository.updateMessageTranslation(conversationId, msg.id, tr)
-                                }
+                                val res = TranslationHelper.translate(msg.content, "Hindi")
+                                chatRepository.updateMessageTranslation(conversationId, msg.id, res)
                             }
                         }
                     )
@@ -737,33 +664,29 @@ fun ChatDetailScreen(
                 }
 
                 DropdownMenuItem(
-                    text = { Text("Translate Message (AI)") },
+                    text = { Text("Translate Message") },
                     leadingIcon = { Icon(Icons.Default.Translate, contentDescription = null, tint = EmeraldPrimary) },
                     onClick = {
                         val toTranslate = msg.content
                         selectedMessageForAction = null
                         scope.launch {
                             Toast.makeText(context, "Translating message...", Toast.LENGTH_SHORT).show()
-                            val trRes = aiRepository.translateMessage(toTranslate, "Hindi and English")
-                            trRes.onSuccess { translated ->
-                                chatRepository.updateMessageTranslation(conversationId, msg.id, translated)
-                            }
+                            val translated = TranslationHelper.translate(toTranslate, "Hindi and English")
+                            chatRepository.updateMessageTranslation(conversationId, msg.id, translated)
                         }
                     }
                 )
 
                 if (msg.type in listOf("voice", "audio")) {
                     DropdownMenuItem(
-                        text = { Text("Transcribe Audio to Text (AI)") },
+                        text = { Text("Transcribe Audio to Text") },
                         leadingIcon = { Icon(Icons.Default.Mic, contentDescription = null, tint = PurpleAccent) },
                         onClick = {
                             selectedMessageForAction = null
                             scope.launch {
                                 Toast.makeText(context, "Transcribing voice note...", Toast.LENGTH_SHORT).show()
-                                val trRes = aiRepository.transcribeAudio(msg.mediaName ?: "voice note")
-                                trRes.onSuccess { transcribed ->
-                                    chatRepository.updateMessageTranscription(conversationId, msg.id, transcribed)
-                                }
+                                val transcribed = TranscriptionHelper.transcribe(msg.mediaName ?: "voice note")
+                                chatRepository.updateMessageTranscription(conversationId, msg.id, transcribed)
                             }
                         }
                     )
@@ -864,93 +787,6 @@ fun ChatDetailScreen(
             },
             dismissButton = {
                 TextButton(onClick = { editingMessage = null }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
-
-    // AI Summary & Task Extraction Dialog
-    if (showAiResultDialog) {
-        AlertDialog(
-            onDismissRequest = { showAiResultDialog = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = PurpleAccent)
-                    Spacer(Modifier.width(8.dp))
-                    Text(aiResultTitle)
-                }
-            },
-            text = {
-                if (isAiLoading) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(color = PurpleAccent)
-                    }
-                } else {
-                    Text(text = aiResultContent, fontSize = 14.sp, lineHeight = 20.sp)
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Hamza AI Output", aiResultContent))
-                        Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
-                        showAiResultDialog = false
-                    }
-                ) {
-                    Text("Copy")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAiResultDialog = false }) {
-                    Text("Close")
-                }
-            }
-        )
-    }
-
-    // Ask AI Dialog
-    if (showAskAiDialog) {
-        AlertDialog(
-            onDismissRequest = { showAskAiDialog = false },
-            title = { Text("Ask Hamza AI about this chat") },
-            text = {
-                Column {
-                    Text("Ask anything about the discussion (e.g. 'What did Alice say about the budget?')", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = askQuestionText,
-                        onValueChange = { askQuestionText = it },
-                        placeholder = { Text("Your question...") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val q = askQuestionText
-                        showAskAiDialog = false
-                        isAiLoading = true
-                        aiResultTitle = "Hamza AI Answer"
-                        showAiResultDialog = true
-                        scope.launch {
-                            val formattedList = messages.map { Pair(it.senderName, it.content) }
-                            val res = aiRepository.askAboutChat(formattedList, q)
-                            isAiLoading = false
-                            aiResultContent = res.getOrElse { "Could not get an answer: ${it.message}" }
-                        }
-                    }
-                ) {
-                    Text("Ask")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showAskAiDialog = false }) {
                     Text("Cancel")
                 }
             }

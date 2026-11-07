@@ -24,8 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.example.data.model.AppSettings
-import com.example.data.model.HamzaAiConfig
-import com.example.data.repository.AiRepository
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.CallRepository
 import com.example.data.repository.ChatRepository
@@ -34,8 +32,6 @@ import com.example.data.repository.PersonalSpaceRepository
 import com.example.data.repository.SettingsRepository
 import com.example.data.repository.StatusRepository
 import com.example.ui.screens.MainScreen
-import com.example.ui.screens.ai.HamzaAiProfileScreen
-import com.example.ui.screens.ai.HamzaAiScreen
 import com.example.ui.screens.auth.AuthScreen
 import com.example.ui.screens.auth.ProfileSetupScreen
 import com.example.ui.screens.calls.ActiveCallScreen
@@ -71,7 +67,6 @@ class MainActivity : ComponentActivity() {
         val chatRepository = ChatRepository(this)
         val callRepository = CallRepository(this)
         val contactsRepository = ContactsRepository(this)
-        val aiRepository = AiRepository(this)
         val settingsRepository = SettingsRepository(this)
         val personalSpaceRepository = PersonalSpaceRepository(this)
         val statusRepository = StatusRepository(this)
@@ -100,7 +95,6 @@ class MainActivity : ComponentActivity() {
                         chatRepository = chatRepository,
                         callRepository = callRepository,
                         contactsRepository = contactsRepository,
-                        aiRepository = aiRepository,
                         settingsRepository = settingsRepository,
                         personalSpaceRepository = personalSpaceRepository,
                         statusRepository = statusRepository,
@@ -127,7 +121,6 @@ sealed class CurrentDestination {
     data object BackupSettings : CurrentDestination()
     data object LinkedDevices : CurrentDestination()
     data object HelpSupport : CurrentDestination()
-    data object HamzaAiProfile : CurrentDestination()
 }
 
 @Composable
@@ -136,7 +129,6 @@ fun ChatMitraApp(
     chatRepository: ChatRepository,
     callRepository: CallRepository,
     contactsRepository: ContactsRepository,
-    aiRepository: AiRepository,
     settingsRepository: SettingsRepository,
     personalSpaceRepository: PersonalSpaceRepository,
     statusRepository: StatusRepository,
@@ -144,11 +136,6 @@ fun ChatMitraApp(
 ) {
     val currentUser by authRepository.currentUser.collectAsState()
     val userProfile by authRepository.userProfile.collectAsState()
-    val aiConfig by settingsRepository.hamzaAiConfigFlow.collectAsState(initial = HamzaAiConfig())
-
-    LaunchedEffect(aiConfig) {
-        aiRepository.activeConfig = aiConfig
-    }
 
     var isAppUnlocked by remember(settings.isAppLockEnabled) {
         mutableStateOf(!settings.isAppLockEnabled)
@@ -209,7 +196,6 @@ fun ChatMitraApp(
                 chatRepository = chatRepository,
                 callRepository = callRepository,
                 contactsRepository = contactsRepository,
-                aiRepository = aiRepository,
                 settingsRepository = settingsRepository,
                 authRepository = authRepository,
                 onNavigateChatDetail = { convId, title ->
@@ -229,9 +215,6 @@ fun ChatMitraApp(
                 },
                 onOpenQrCode = {
                     destination = CurrentDestination.QrContact
-                },
-                onOpenAiProfile = {
-                    destination = CurrentDestination.HamzaAiProfile
                 },
                 onNavigatePrivacy = { destination = CurrentDestination.PrivacySettings },
                 onNavigateAppLock = { destination = CurrentDestination.AppLockSettings },
@@ -261,7 +244,6 @@ fun ChatMitraApp(
                 currentUserName = userProfile?.displayName ?: "User",
                 chatRepository = chatRepository,
                 callRepository = callRepository,
-                aiRepository = aiRepository,
                 onBackClick = { destination = CurrentDestination.Main },
                 onStartCall = { callId, name, type ->
                     destination = CurrentDestination.ActiveCall(callId, name, type)
@@ -349,14 +331,6 @@ fun ChatMitraApp(
         is CurrentDestination.HelpSupport -> {
             BackHandler { destination = CurrentDestination.Main }
             HelpSupportScreen(onBackClick = { destination = CurrentDestination.Main })
-        }
-        is CurrentDestination.HamzaAiProfile -> {
-            BackHandler { destination = CurrentDestination.Main }
-            HamzaAiProfileScreen(
-                aiRepository = aiRepository,
-                settingsRepository = settingsRepository,
-                onBackClick = { destination = CurrentDestination.Main }
-            )
         }
     }
 }

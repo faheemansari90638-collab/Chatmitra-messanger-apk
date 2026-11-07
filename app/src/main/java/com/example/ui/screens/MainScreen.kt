@@ -27,14 +27,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.UserProfile
-import com.example.data.repository.AiRepository
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.CallRepository
 import com.example.data.repository.ChatRepository
 import com.example.data.repository.ContactsRepository
 import com.example.data.repository.SettingsRepository
 import com.example.ui.navigation.MainTab
-import com.example.ui.screens.ai.HamzaAiScreen
 import com.example.ui.screens.calls.CallsListScreen
 import com.example.ui.screens.contacts.ContactsScreen
 import com.example.ui.screens.chat.ChatListScreen
@@ -49,7 +47,6 @@ fun MainScreen(
     chatRepository: ChatRepository,
     callRepository: CallRepository,
     contactsRepository: ContactsRepository,
-    aiRepository: AiRepository,
     settingsRepository: SettingsRepository,
     authRepository: AuthRepository,
     onNavigateChatDetail: (String, String) -> Unit,
@@ -64,7 +61,6 @@ fun MainScreen(
     onNavigateHelp: () -> Unit,
     onOpenPersonalSpace: () -> Unit = {},
     onOpenQrCode: () -> Unit = {},
-    onOpenAiProfile: () -> Unit = {},
     onEditProfile: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
@@ -85,9 +81,7 @@ fun MainScreen(
                             Icon(
                                 imageVector = if (isSelected) tab.selectedIcon else tab.unselectedIcon,
                                 contentDescription = tab.title,
-                                tint = if (isSelected) {
-                                    if (tab == MainTab.HAMZA_AI) PurpleAccent else EmeraldPrimary
-                                } else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = if (isSelected) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         label = {
@@ -95,14 +89,11 @@ fun MainScreen(
                                 text = tab.title,
                                 fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) {
-                                    if (tab == MainTab.HAMZA_AI) PurpleAccent else EmeraldPrimary
-                                } else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = if (isSelected) EmeraldPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = if (tab == MainTab.HAMZA_AI) PurpleAccent.copy(alpha = 0.15f)
-                            else EmeraldPrimary.copy(alpha = 0.15f)
+                            indicatorColor = EmeraldPrimary.copy(alpha = 0.15f)
                         ),
                         modifier = Modifier.testTag("tab_${tab.route}")
                     )
@@ -151,13 +142,6 @@ fun MainScreen(
                             onStartChatWithUser = onNavigateChatDetail
                         )
                     }
-                    MainTab.HAMZA_AI -> {
-                        HamzaAiScreen(
-                            aiRepository = aiRepository,
-                            settingsRepository = settingsRepository,
-                            onOpenAiProfile = onOpenAiProfile
-                        )
-                    }
                     MainTab.SETTINGS -> {
                         SettingsScreen(
                             userProfile = userProfile,
@@ -170,7 +154,6 @@ fun MainScreen(
                             onNavigateBackup = onNavigateBackup,
                             onNavigateLinkedDevices = onNavigateLinkedDevices,
                             onNavigateHelp = onNavigateHelp,
-                            onNavigateAiProfile = onOpenAiProfile,
                             onLoggedOut = onLoggedOut
                         )
                     }

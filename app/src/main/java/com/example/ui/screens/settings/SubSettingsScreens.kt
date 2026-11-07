@@ -834,7 +834,7 @@ fun HelpSupportScreen(onBackClick: () -> Unit) {
                     Text("Package: com.chatmitra.app", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "ChatMitra is a native Android communication app designed with modern 3D UI, WebRTC real calling, end-to-end privacy, and the Hamza AI assistant powered by Google Gemini.",
+                        "ChatMitra is a native Android communication app designed with modern 3D UI, WebRTC real calling, end-to-end privacy, stories, personal space, and offline-ready translation & transcription.",
                         fontSize = 13.sp,
                         lineHeight = 18.sp
                     )
@@ -846,8 +846,8 @@ fun HelpSupportScreen(onBackClick: () -> Unit) {
             Text("Frequently Asked Questions", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.primary)
             Spacer(Modifier.height(8.dp))
 
-            FaqItem("Is Hamza AI completely free to use?", "Yes! Hamza AI assistant is built right into ChatMitra at no cost. You can translate between English, Hindi, and Urdu, draft messages, and check grammar anytime.")
             FaqItem("Are audio and video calls real?", "Yes. ChatMitra utilizes WebRTC with direct peer connections and STUN/TURN signaling architecture for real-time HD audio and video calls.")
+            FaqItem("How do message translation and voice transcription work?", "ChatMitra includes built-in multilingual translation (English, Hindi, Urdu, Arabic) and voice-to-text transcription directly on your device without external AI dependencies.")
             FaqItem("Does ChatMitra contain any ads or subscriptions?", "No. ChatMitra is 100% ad-free, has no premium paywalls, and no hidden subscriptions.")
             FaqItem("How do I protect my chats?", "You can enable App Lock in Settings > Security & Privacy using your fingerprint, face unlock, or a secure 4/6-digit PIN.")
         }

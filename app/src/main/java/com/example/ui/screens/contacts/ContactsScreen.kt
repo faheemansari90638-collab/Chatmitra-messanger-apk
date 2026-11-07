@@ -324,7 +324,7 @@ fun ContactsScreen(
                                                 type = "text/plain"
                                                 putExtra(
                                                     Intent.EXTRA_TEXT,
-                                                    "Hey! Let's chat securely on ChatMitra. Join me with Hamza AI assistant!"
+                                                    "Hey! Let's chat securely on ChatMitra. Download ChatMitra today!"
                                                 )
                                             }
                                             context.startActivity(Intent.createChooser(shareIntent, "Invite via"))
